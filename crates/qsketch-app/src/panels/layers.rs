@@ -51,6 +51,8 @@ pub fn ui(ui: &mut Ui, state: &mut AppState) {
         return;
     };
     let ctx = ui.ctx().clone();
+    // Ash build: the layer row under the pointer, for the canvas to outline.
+    ctx.data_mut(|d| d.remove::<(DocId, LayerId)>(egui::Id::new(crate::canvas::LAYER_HOVER_ID)));
     let mut changed_props = false;
     let mut toggle_vis: Vec<(LayerId, bool)> = Vec::new();
     // Eye sweep: pressing an eye and dragging over others sets them all to
@@ -301,6 +303,9 @@ pub fn ui(ui: &mut Ui, state: &mut AppState) {
             let row_h = if is_group { group_h } else { row_h };
             ui.spacing_mut().item_spacing.y = 1.0;
             let (row_rect, row_resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), row_h), Sense::click());
+            if !is_group && ui.rect_contains_pointer(row_rect) {
+                ctx.data_mut(|d| d.insert_temp(egui::Id::new(crate::canvas::LAYER_HOVER_ID), (doc_id, layer_id)));
+            }
             if is_active && jump_to_active {
                 ui.scroll_to_rect(row_rect, None);
             }
