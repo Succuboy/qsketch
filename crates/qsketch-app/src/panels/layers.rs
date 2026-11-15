@@ -596,10 +596,14 @@ pub fn ui(ui: &mut Ui, state: &mut AppState) {
                         crate::ui::theme::dim_text(ui.visuals()).gamma_multiply(0.6)
                     };
                     if half_on {
-                        let pill = egui::Rect::from_center_size(hr.center(), egui::vec2(18.0, 14.0));
+                        let pill = egui::Rect::from_center_size(hr.center(), egui::vec2(18.0, 24.0));
                         ui.painter().rect_stroke(pill, 3.0, egui::Stroke::new(1.0, col), egui::StrokeKind::Inside);
                     }
-                    ui.painter().text(hr.center(), egui::Align2::CENTER_CENTER, "½", egui::FontId::proportional(12.0), col);
+                    // Ash's half-opacity icon (a bust, half see-through, "1 2").
+                    let tex = half_icon(ui.ctx());
+                    let ir = egui::Rect::from_center_size(hr.center(), egui::vec2(12.0, 18.0));
+                    let tint = if half_on || hb.hovered() { Color32::WHITE } else { Color32::from_white_alpha(140) };
+                    ui.painter().image(tex.id(), ir, egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)), tint);
                     if hb.on_hover_text(if half_on { "Layer at 50%: click to put it back to 100%" } else { "Show this layer at 50% (click again for 100%)" }).clicked() {
                         half_toggle = Some(i);
                     }
@@ -966,6 +970,22 @@ pub fn ui(ui: &mut Ui, state: &mut AppState) {
             entry.doc.commit("Layer Properties");
         }
     }
+}
+
+/// The half-opacity button's picture, loaded once.
+fn half_icon(ctx: &egui::Context) -> egui::TextureHandle {
+    let id = egui::Id::new("ash_half_icon");
+    if let Some(t) = ctx.data(|d| d.get_temp::<egui::TextureHandle>(id)) {
+        return t;
+    }
+    let img = image::load_from_memory(include_bytes!("../../../../assets/icon/half_opacity.png")).map(|i| i.to_rgba8()).ok();
+    let ci = match img {
+        Some(i) => egui::ColorImage::from_rgba_unmultiplied([i.width() as usize, i.height() as usize], i.as_raw()),
+        None => egui::ColorImage::new([1, 1], vec![Color32::WHITE]),
+    };
+    let t = ctx.load_texture("ash_half_icon", ci, egui::TextureOptions::NEAREST);
+    ctx.data_mut(|d| d.insert_temp(id, t.clone()));
+    t
 }
 
 /// Outline of an unticked (hidden) visibility box: the palette's dim text, not
