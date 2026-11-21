@@ -3,6 +3,7 @@
 pub mod anim_io;
 pub mod ase;
 pub mod brush_formats;
+pub mod eps;
 pub mod image_io;
 pub mod psd;
 pub mod qsk;
@@ -21,8 +22,8 @@ pub const NATIVE_EXTENSION: &str = "qsk";
 /// `.ase`/`.aseprite` and Photoshop `.psd`.
 pub const DOCUMENT_EXTENSIONS: &[&str] = &[NATIVE_EXTENSION, "ase", "aseprite", psd::EXTENSION];
 
-/// Formats we can open but not write: PaintTool SAI 2.
-pub const OPEN_ONLY_EXTENSIONS: &[&str] = &[sai2::EXTENSION];
+/// Formats we can open but not write: PaintTool SAI 2 and EPS (Encapsulated PostScript).
+pub const OPEN_ONLY_EXTENSIONS: &[&str] = &[sai2::EXTENSION, "eps", "epsf", "epsi"];
 
 /// Save a layered document in the format implied by the extension.
 pub fn save_document(path: &Path, doc: &crate::document::DocState) -> anyhow::Result<()> {
@@ -90,6 +91,7 @@ pub fn format_name(path: &Path) -> String {
         "ase" | "aseprite" => "Aseprite".into(),
         "psd" => "Photoshop".into(),
         "sai2" => "PaintTool SAI 2".into(),
+        "eps" | "epsf" | "epsi" => "EPS".into(),
         "png" => "PNG".into(),
         "jpg" | "jpeg" => "JPEG".into(),
         "webp" => "WebP".into(),
@@ -202,6 +204,10 @@ pub fn open_full(path: &Path) -> anyhow::Result<(crate::document::DocState, crat
     } else if sai2::is_sai2(path) {
         let (doc, warnings) = sai2::load_with_warnings(path)?;
         Ok((doc, fresh(), warnings))
+    } else if eps::is_eps(path) {
+        let (raster, warnings) = eps::load_with_warnings(path)?;
+        let name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("EPS").to_string();
+        Ok((crate::document::DocState::from_raster(name, raster), fresh(), warnings))
     } else {
         if anim_io::might_be_animated(path) {
             if let Some(doc) = anim_io::import_animated(path)? {

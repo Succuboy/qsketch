@@ -26,6 +26,7 @@ pub fn open_dialog(state: &mut AppState) {
         .add_filter("Aseprite", io::ase::EXTENSIONS)
         .add_filter("Photoshop", &[io::psd::EXTENSION])
         .add_filter("PaintTool SAI 2", &[io::sai2::EXTENSION])
+        .add_filter("EPS (Encapsulated PostScript)", io::eps::EXTENSIONS)
         .add_filter("Images", &image_filter_exts())
         .add_filter("3D model", &["glb"]);
     let dlg = match state.settings.general.recent_files.first().and_then(|p| p.parent()) {
